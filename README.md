@@ -27,6 +27,7 @@ Sorted alphabetically.
 - [DiffDock](#diffdock) — small molecule docking
 - [ESM2](#esm2-masked-position-prediction) — masked amino acid prediction
 - [ESMFold2](#esmfold2) — single-sequence / complex structure prediction
+- [ESMFold2 binder design](#esmfold2-binder-design) — gradient-guided sequence-only binder design
 - [FASPR](#faspr-side-chain-packing) — side-chain packing
 - [Germinal](#germinal) — binder design
 - [IgGM](#iggm) — antibody design
@@ -75,7 +76,7 @@ uv run --with modal modal run modal_afdesign.py --pdb in/afdesign/1igy_cropped.f
 A very basic implementation.
 ```bash
 wget https://www.rcsb.org/fasta/entry/3NIT -O 3NIT.faa
-uv run --with modal modal run modal_alphafold.py --input-fasta 3NIT.faa
+uv run --with modal modal run modal_alphafold.py --input-faa 3NIT.faa
 ```
 
 ## ANARCI
@@ -83,7 +84,7 @@ A tool for annotating antibody sequences https://github.com/oxpig/ANARCI
 
 ```bash
 printf '>test_anarci\nDIQMTQSPSSLSASVGDRVTITCRASQDVNTAVAWYQQKPGKAPKLLIYSASFLESGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQHYTTPPTFGQGTKVEIKRT\n' > test_anarci.faa
-uv run --with modal modal run modal_anarci.py --input-fasta test_anarci.faa
+uv run --with modal modal run modal_anarci.py --input-faa test_anarci.faa
 ```
 
 ## BindCraft
@@ -149,6 +150,29 @@ printf '>protein|name=insulin\nGIVEQCCTSICSLYQLENYCN\n' > test_esmfold2.faa
 uv run --with modal modal run modal_esmfold2.py --input-faa test_esmfold2.faa
 ```
 
+## ESMFold2 binder design
+
+Gradient-guided binder sequence design using ESMFold2 (folding/distogram) +
+ESMC (LM regularization), adapted from [Biohub's cookbook
+binder_design.py](https://github.com/Biohub/esm/blob/main/cookbook/tutorials/binder_design.py).
+Sequence-only — no target PDB or hotspots required. Built-in preset targets
+(`cd45`, `ctla4`, `egfr`, `pd-l1`, `pdgfr`) and binder scaffolds (`minibinder`,
+`trastuzumab_framework_vhvl`, `atezolizumab_framework_vhvl`, `ocankitug_framework_vhvl`).
+
+```bash
+# Minibinder against PD-L1 (preset target + preset scaffold)
+uv run --with modal modal run modal_esmfold2_binder_design.py --target-name pd-l1 --binder-name minibinder
+
+# Trastuzumab-framework antibody against CTLA-4
+uv run --with modal modal run modal_esmfold2_binder_design.py \
+    --target-name ctla4 --binder-name trastuzumab_framework_vhvl --is-antibody
+
+# Custom target + custom template ('#' = designable position)
+uv run --with modal modal run modal_esmfold2_binder_design.py \
+    --target-sequence AFTVTVPKDLYVVEYGSNMTIECKFPVEKQLDLAALIVYWEMEDKNIIQFVHGEEDLKVQHSSYRQRARLLKDQLSLGNAALQITDVKLQDAGVYRCMISYGGADYKRITVKVNA \
+    --binder-sequence "############################################################"
+```
+
 ## FASPR (side-chain packing)
 
 [FASPR](https://github.com/tommyhuangthu/FASPR) — fast and accurate side-chain
@@ -192,7 +216,7 @@ uv run --with modal --with PyYAML modal run modal_germinal.py --target-yaml targ
 ```bash
 wget https://files.rcsb.org/download/5O45.pdb
 printf '>H\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKDRLSITIRPRYYGLDVWGQGTTVTVSS\n>L\nDIQMTQSPSSLSASVGDRVTITCRASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQHYTTPPTFGQGTKVEIKRT\n>A\n' > test_iggm.faa
-uv run --with modal modal run modal_iggm.py --input-fasta test_iggm.faa --antigen 5O45.pdb --epitope 19,20,21
+uv run --with modal modal run modal_iggm.py --input-faa test_iggm.faa --antigen 5O45.pdb --epitope 19,20,21
 ```
 
 ## LigandMPNN
