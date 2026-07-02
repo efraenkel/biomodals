@@ -62,6 +62,29 @@ image = (
         "jax[cuda]<0.7.0",  # Pin to avoid 'wraps' removal in JAX 0.7.0
         "matplotlib==3.8.1",  # https://github.com/martinpacesa/BindCraft/issues/4
     )
+    # Fix for newer PyRosetta (2026.x): neither InterfaceAnalyzerMover()+
+    # set_interface("A_B") NOR InterfaceAnalyzerMover("A_B") (a previously
+    # applied patch) accept a plain chain string anymore -- confirmed against
+    # PyRosetta4.Release 2026.26: the constructor only accepts int / set[int] /
+    # DockingPartners / ScoreFunction overloads. Use the version-stable pattern
+    # instead: build the interface fold tree explicitly with setup_foldtree()
+    # and construct the mover from the resulting jump index (int), which is
+    # supported across PyRosetta releases. Kept as the LAST layer so the
+    # expensive PyRosetta/AlphaFold-params layers above stay cached.
+    .run_commands(
+        """python3 - <<'PYEOF'
+p = "/root/bindcraft/functions/pyrosetta_utils.py"
+s = open(p).read()
+old = '    iam = InterfaceAnalyzerMover()\\n    iam.set_interface("A_B")\\n'
+new = (
+    '    from pyrosetta.rosetta.protocols.docking import setup_foldtree\\n'
+    '    setup_foldtree(pose, "A_B", pr.Vector1([1]))\\n'
+    '    iam = InterfaceAnalyzerMover(1)\\n'
+)
+assert old in s, "pyrosetta_utils.py score_interface pattern not found -- upstream file changed"
+open(p, "w").write(s.replace(old, new))
+PYEOF"""
+    )
 )
 
 

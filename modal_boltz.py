@@ -78,7 +78,13 @@ def download_model():
 
 image = (
     Image.debian_slim(python_version="3.11")
-    .micromamba()
+    # NB: .micromamba() discards the debian_slim base and starts a fresh conda
+    # env; without an explicit python_version it resolves to conda-forge's
+    # latest (drifted to 3.12+ as of 2026), which breaks colabfold's pinned
+    # `pandas<2.0.0` dependency (no cp312 wheel for pandas 1.5.3 -> falls back
+    # to a source build -> fails on missing pkg_resources in the isolated
+    # build env). Pin to 3.11 to match what colabfold's pins were tested against.
+    .micromamba(python_version="3.11")
     .apt_install("wget", "git", "gcc", "g++")
     # NB: keep this as pip_install — uv's strict build isolation breaks pandas'
     # legacy pkg_resources dependency when building via colabfold's git source.
